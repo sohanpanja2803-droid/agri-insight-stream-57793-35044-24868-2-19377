@@ -11,103 +11,55 @@ import {
 } from "recharts";
 import { 
   Droplets, Thermometer, Sprout, TrendingUp, 
-  MapPin, Calendar, LogOut, User, Activity 
+  MapPin, Calendar, LogOut, Activity 
 } from "lucide-react";
 import Header from "@/components/Header";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [userData, setUserData] = useState<any>(null);
+  const { toast } = useToast();
+  const [userId, setUserId] = useState<string | undefined>();
+  const [user, setUser] = useState<any>(null);
+  const { profile, soilData, cropSuggestions, temperatureReadings, growthMetrics, yieldPredictions } = useDashboardData(userId);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const isAuth = localStorage.getItem("isAuthenticated");
-    if (!isAuth) {
-      navigate("/login");
-      return;
-    }
+    // Check authentication and set up auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/login");
+      } else if (session?.user) {
+        setUser(session.user);
+        setUserId(session.user.id);
+      }
+    });
 
-    // Load user data
-    const data = localStorage.getItem("trialUserData");
-    if (data) {
-      const parsedData = JSON.parse(data);
-      setUserData(parsedData);
-      
-      // Try to fetch data from backend
-      fetchBackendData(parsedData.email);
-    }
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/login");
+      } else {
+        setUser(session.user);
+        setUserId(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchBackendData = async (email: string) => {
-    try {
-      // Import dynamically to avoid issues if backend is not running
-      const { getUserData, getRecommendations, healthCheck } = await import('@/services/api');
-      
-      // Check if backend is available
-      const health = await healthCheck();
-      if (health.status === 'ok') {
-        setBackendConnected(true);
-        
-        // Try to get user data from backend
-        try {
-          const backendUser = await getUserData(email);
-          if (backendUser && backendUser.soil_data) {
-            // Update soil data display with real backend data
-            const soil = backendUser.soil_data;
-            setSoilData([
-              { 
-                parameter: "pH Level", 
-                value: soil.ph?.toString() || "N/A", 
-                optimal: "6.0-7.0", 
-                status: (soil.ph >= 6.0 && soil.ph <= 7.0) ? "optimal" : "monitor" 
-              },
-              { 
-                parameter: "Moisture", 
-                value: soil.moisture ? `${soil.moisture}%` : "N/A", 
-                optimal: "65-75%", 
-                status: (soil.moisture >= 65 && soil.moisture <= 75) ? "optimal" : "monitor" 
-              },
-              { 
-                parameter: "Nitrogen (N)", 
-                value: soil.nitrogen ? `${soil.nitrogen} mg/kg` : "N/A", 
-                optimal: "200-300 mg/kg", 
-                status: (soil.nitrogen >= 200 && soil.nitrogen <= 300) ? "optimal" : "monitor" 
-              },
-              { 
-                parameter: "Phosphorus (P)", 
-                value: soil.phosphorus ? `${soil.phosphorus} mg/kg` : "N/A", 
-                optimal: "30-50 mg/kg", 
-                status: (soil.phosphorus >= 30 && soil.phosphorus <= 50) ? "optimal" : "monitor" 
-              },
-              { 
-                parameter: "Potassium (K)", 
-                value: soil.potassium ? `${soil.potassium} mg/kg` : "N/A", 
-                optimal: "150-200 mg/kg", 
-                status: (soil.potassium >= 150 && soil.potassium <= 200) ? "optimal" : "monitor" 
-              },
-              { 
-                parameter: "Organic Matter", 
-                value: "3.2%", 
-                optimal: "3-5%", 
-                status: "optimal" 
-              },
-            ]);
-          }
-        } catch (error) {
-          console.log("User not found in backend, using default data");
-        }
-      }
-    } catch (error) {
-      console.log("Backend not available, using mock data");
-      setBackendConnected(false);
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } else {
+      navigate("/login", { replace: true });
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("authTimestamp");
-    localStorage.removeItem("trialUserData");
-    navigate("/login", { replace: true });
   };
 
   // Mock data for charts
@@ -144,21 +96,58 @@ const Dashboard = () => {
     { month: "Apr", predicted: 550, actual: 0 },
   ];
 
-  const [soilData, setSoilData] = useState([
+  // Transform soil data for display
+  const soilDataDisplay = soilData ? [
+    { 
+      parameter: "pH Level", 
+      value: soilData.ph?.toString() || "N/A", 
+      optimal: "6.0-7.0", 
+      status: (soilData.ph && soilData.ph >= 6.0 && soilData.ph <= 7.0) ? "optimal" : "monitor" 
+    },
+    { 
+      parameter: "Moisture", 
+      value: soilData.moisture ? `${soilData.moisture}%` : "N/A", 
+      optimal: "65-75%", 
+      status: (soilData.moisture && soilData.moisture >= 65 && soilData.moisture <= 75) ? "optimal" : "monitor" 
+    },
+    { 
+      parameter: "Nitrogen (N)", 
+      value: soilData.nitrogen ? `${soilData.nitrogen} mg/kg` : "N/A", 
+      optimal: "200-300 mg/kg", 
+      status: (soilData.nitrogen && soilData.nitrogen >= 200 && soilData.nitrogen <= 300) ? "optimal" : "monitor" 
+    },
+    { 
+      parameter: "Phosphorus (P)", 
+      value: soilData.phosphorus ? `${soilData.phosphorus} mg/kg` : "N/A", 
+      optimal: "30-50 mg/kg", 
+      status: (soilData.phosphorus && soilData.phosphorus >= 30 && soilData.phosphorus <= 50) ? "optimal" : "monitor" 
+    },
+    { 
+      parameter: "Potassium (K)", 
+      value: soilData.potassium ? `${soilData.potassium} mg/kg` : "N/A", 
+      optimal: "150-200 mg/kg", 
+      status: (soilData.potassium && soilData.potassium >= 150 && soilData.potassium <= 200) ? "optimal" : "monitor" 
+    },
+    { 
+      parameter: "Organic Matter", 
+      value: soilData.organic_matter ? `${soilData.organic_matter}%` : "N/A", 
+      optimal: "3-5%", 
+      status: (soilData.organic_matter && soilData.organic_matter >= 3 && soilData.organic_matter <= 5) ? "optimal" : "monitor" 
+    },
+  ] : [
     { parameter: "pH Level", value: "6.8", optimal: "6.0-7.0", status: "optimal" },
     { parameter: "Moisture", value: "71%", optimal: "65-75%", status: "optimal" },
     { parameter: "Nitrogen (N)", value: "245 mg/kg", optimal: "200-300 mg/kg", status: "optimal" },
     { parameter: "Phosphorus (P)", value: "42 mg/kg", optimal: "30-50 mg/kg", status: "optimal" },
     { parameter: "Potassium (K)", value: "185 mg/kg", optimal: "150-200 mg/kg", status: "optimal" },
     { parameter: "Organic Matter", value: "3.2%", optimal: "3-5%", status: "optimal" },
-  ]);
-  const [backendConnected, setBackendConnected] = useState(false);
+  ];
 
-  if (!userData) {
-    return <div>Loading...</div>;
+  if (!user || !profile) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  const initials = userData.fullName
+  const initials = profile.full_name
     ?.split(" ")
     .map((n: string) => n[0])
     .join("")
@@ -177,17 +166,15 @@ const Dashboard = () => {
                 <AvatarFallback className="text-xl">{initials}</AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-2xl font-bold">{userData.fullName}</h1>
+                <h1 className="text-2xl font-bold">{profile.full_name}</h1>
                 <p className="text-muted-foreground flex items-center gap-2 mt-1">
                   <MapPin className="h-4 w-4" />
-                  {userData.location || "Location not specified"}
+                  {profile.location || "Location not specified"}
                 </p>
-                {backendConnected && (
-                  <Badge variant="secondary" className="mt-2">
-                    <Activity className="h-3 w-3 mr-1" />
-                    Backend Connected
-                  </Badge>
-                )}
+                <Badge variant="secondary" className="mt-2">
+                  <Activity className="h-3 w-3 mr-1" />
+                  Cloud Connected
+                </Badge>
               </div>
             </div>
             <Button variant="outline" onClick={handleLogout}>
@@ -208,9 +195,9 @@ const Dashboard = () => {
               <Sprout className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{userData.farmSize} acres</div>
+              <div className="text-2xl font-bold">{profile.farm_size || 'N/A'} acres</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {userData.cropType}
+                {profile.crop_type || 'Not specified'}
               </p>
             </CardContent>
           </Card>
@@ -265,7 +252,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {soilData.map((item, index) => (
+              {soilDataDisplay.map((item, index) => (
                 <div key={index} className="p-4 rounded-lg border bg-card">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-medium text-muted-foreground">{item.parameter}</h4>
@@ -423,54 +410,62 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
+                  {(cropSuggestions && cropSuggestions.length > 0 ? cropSuggestions : [
                     {
-                      name: "Groundnut",
-                      suitability: 75,
-                      priceRange: "Rs.64.54 - Rs.71.33",
+                      crop_name: "Groundnut",
+                      suitability_score: 75,
+                      price_range_min: 64.54,
+                      price_range_max: 71.33,
                       trend: "increasing"
                     },
                     {
-                      name: "Wheat",
-                      suitability: 60,
-                      priceRange: "Rs.23.41 - Rs.25.87",
+                      crop_name: "Wheat",
+                      suitability_score: 60,
+                      price_range_min: 23.41,
+                      price_range_max: 25.87,
                       trend: "increasing"
                     },
                     {
-                      name: "Maize",
-                      suitability: 60,
-                      priceRange: "Rs.13.15 - Rs.14.53",
+                      crop_name: "Maize",
+                      suitability_score: 60,
+                      price_range_min: 13.15,
+                      price_range_max: 14.53,
                       trend: "decreasing"
                     },
                     {
-                      name: "Soybeans",
-                      suitability: 60,
-                      priceRange: "Rs.34.27 - Rs.37.87",
+                      crop_name: "Soybeans",
+                      suitability_score: 60,
+                      price_range_min: 34.27,
+                      price_range_max: 37.87,
                       trend: "increasing"
                     },
                     {
-                      name: "Tea",
-                      suitability: 60,
-                      priceRange: "Rs.246.31 - Rs.272.24",
+                      crop_name: "Tea",
+                      suitability_score: 60,
+                      price_range_min: 246.31,
+                      price_range_max: 272.24,
                       trend: "stable"
                     },
                     {
-                      name: "Tomatoes",
-                      suitability: 60,
-                      priceRange: "Rs.25.86 - Rs.28.58",
+                      crop_name: "Tomatoes",
+                      suitability_score: 60,
+                      price_range_min: 25.86,
+                      price_range_max: 28.58,
                       trend: "stable"
                     }
-                  ].map((crop, index) => (
+                  ]).map((crop, index) => (
                     <div key={index} className="p-5 rounded-lg border bg-card hover:shadow-md transition-shadow">
-                      <h3 className="text-lg font-semibold mb-3">{crop.name}</h3>
+                      <h3 className="text-lg font-semibold mb-3">{crop.crop_name}</h3>
                       <div className="space-y-2.5">
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">Suitability Score:</p>
-                          <p className="font-semibold text-base">{crop.suitability}/100</p>
+                          <p className="font-semibold text-base">{crop.suitability_score}/100</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">Price Range:</p>
-                          <p className="font-semibold text-base">{crop.priceRange}</p>
+                          <p className="font-semibold text-base">
+                            Rs.{crop.price_range_min} - Rs.{crop.price_range_max}
+                          </p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">Trend:</p>
@@ -513,7 +508,7 @@ const Dashboard = () => {
             <div className="p-4 rounded-lg bg-chart-2/5 border border-chart-2/20">
               <h3 className="font-semibold mb-2">📈 Growth Rate Above Average</h3>
               <p className="text-sm text-muted-foreground">
-                Your {userData.cropType} is growing 15% faster than regional average. 
+                Your {profile.crop_type || 'crops'} {profile.crop_type ? 'are' : 'is'} growing 15% faster than regional average. 
                 Current practices are highly effective!
               </p>
             </div>
