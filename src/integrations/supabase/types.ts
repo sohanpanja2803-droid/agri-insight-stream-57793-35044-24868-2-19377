@@ -14,7 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      crop_suggestions: {
+        Row: {
+          created_at: string
+          crop_name: string
+          id: string
+          price_range_max: number
+          price_range_min: number
+          suitability_score: number
+          trend: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crop_name: string
+          id?: string
+          price_range_max: number
+          price_range_min: number
+          suitability_score: number
+          trend: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          crop_name?: string
+          id?: string
+          price_range_max?: number
+          price_range_min?: number
+          suitability_score?: number
+          trend?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      growth_metrics: {
+        Row: {
+          created_at: string
+          health_score: number
+          height: number
+          id: string
+          recorded_at: string
+          user_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          health_score: number
+          height: number
+          id?: string
+          recorded_at?: string
+          user_id: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          health_score?: number
+          height?: number
+          id?: string
+          recorded_at?: string
+          user_id?: string
+          week_number?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          crop_type: string | null
+          email: string
+          farm_size: number | null
+          full_name: string
+          id: string
+          location: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crop_type?: string | null
+          email: string
+          farm_size?: number | null
+          full_name: string
+          id: string
+          location?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crop_type?: string | null
+          email?: string
+          farm_size?: number | null
+          full_name?: string
+          id?: string
+          location?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      soil_data: {
+        Row: {
+          created_at: string
+          id: string
+          moisture: number | null
+          nitrogen: number | null
+          organic_matter: number | null
+          ph: number | null
+          phosphorus: number | null
+          potassium: number | null
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          moisture?: number | null
+          nitrogen?: number | null
+          organic_matter?: number | null
+          ph?: number | null
+          phosphorus?: number | null
+          potassium?: number | null
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          moisture?: number | null
+          nitrogen?: number | null
+          organic_matter?: number | null
+          ph?: number | null
+          phosphorus?: number | null
+          potassium?: number | null
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      temperature_readings: {
+        Row: {
+          created_at: string
+          id: string
+          recorded_at: string
+          temperature: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recorded_at?: string
+          temperature: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recorded_at?: string
+          temperature?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      yield_predictions: {
+        Row: {
+          actual_yield: number | null
+          created_at: string
+          id: string
+          month: string
+          predicted_yield: number
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_yield?: number | null
+          created_at?: string
+          id?: string
+          month: string
+          predicted_yield: number
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_yield?: number | null
+          created_at?: string
+          id?: string
+          month?: string
+          predicted_yield?: number
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
