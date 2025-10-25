@@ -288,11 +288,12 @@ const Dashboard = () => {
 
         {/* Charts Section */}
         <Tabs defaultValue="moisture" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="moisture">Soil Moisture</TabsTrigger>
             <TabsTrigger value="temperature">Temperature</TabsTrigger>
             <TabsTrigger value="growth">Growth</TabsTrigger>
             <TabsTrigger value="yield">Yield Forecast</TabsTrigger>
+            <TabsTrigger value="suggestions">Crop Suggestions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="moisture">
@@ -410,6 +411,84 @@ const Dashboard = () => {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="suggestions">
+            <Card>
+              <CardHeader>
+                <CardTitle>Crop Value Suggestions</CardTitle>
+                <CardDescription>Found 6 suitable crops for your soil conditions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    {
+                      name: "Groundnut",
+                      suitability: 75,
+                      priceRange: "Rs.64.54 - Rs.71.33",
+                      trend: "increasing"
+                    },
+                    {
+                      name: "Wheat",
+                      suitability: 60,
+                      priceRange: "Rs.23.41 - Rs.25.87",
+                      trend: "increasing"
+                    },
+                    {
+                      name: "Maize",
+                      suitability: 60,
+                      priceRange: "Rs.13.15 - Rs.14.53",
+                      trend: "decreasing"
+                    },
+                    {
+                      name: "Soybeans",
+                      suitability: 60,
+                      priceRange: "Rs.34.27 - Rs.37.87",
+                      trend: "increasing"
+                    },
+                    {
+                      name: "Tea",
+                      suitability: 60,
+                      priceRange: "Rs.246.31 - Rs.272.24",
+                      trend: "stable"
+                    },
+                    {
+                      name: "Tomatoes",
+                      suitability: 60,
+                      priceRange: "Rs.25.86 - Rs.28.58",
+                      trend: "stable"
+                    }
+                  ].map((crop, index) => (
+                    <div key={index} className="p-5 rounded-lg border bg-card hover:shadow-md transition-shadow">
+                      <h3 className="text-lg font-semibold mb-3">{crop.name}</h3>
+                      <div className="space-y-2.5">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Suitability Score:</p>
+                          <p className="font-semibold text-base">{crop.suitability}/100</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Price Range:</p>
+                          <p className="font-semibold text-base">{crop.priceRange}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Trend:</p>
+                          <Badge 
+                            variant={
+                              crop.trend === "increasing" ? "default" : 
+                              crop.trend === "decreasing" ? "destructive" : 
+                              "secondary"
+                            }
+                            className="font-medium"
+                          >
+                            {crop.trend}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
